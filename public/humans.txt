@@ -1,0 +1,9 @@
+/* TEAM */
+  Developer: Vizag Airport Cabs Engineering Team
+  Contact: bookings@vizagairportcabs.in
+  Site: https://vizagairportcabs.in
+  Location: Visakhapatnam, Andhra Pradesh, India
+
+/* SITE */
+  Standards: HTML5, CSS3, ES2022, React 19, TypeScript
+  Components: Vite, Tailwind CSS, Lucide React, Motion
