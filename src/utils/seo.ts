@@ -16,8 +16,8 @@ const LOGO_URL = `${SITE_URL}/favicon.svg`;
 
 export const SITE = {
   url: SITE_URL,
-  name: 'Vizag Airport Cabs',
-  legalName: 'Roadstar Cabs (Vizag Airport Cabs)',
+  name: 'Vizag Airport Cabs - Bhogapuram',
+  legalName: 'Roadstar Cabs (Vizag Airport Cabs - Bhogapuram)',
   tagline: '24/7 Airport Taxi & Outstation Cab Services in Visakhapatnam & Bhogapuram',
   description:
     'Vizag Airport Cabs offers 24/7 airport taxi service in Visakhapatnam & Bhogapuram with affordable fares, professional drivers, and instant Call & WhatsApp booking.',
@@ -254,8 +254,7 @@ export function buildHomeSchema(opts: {
   faqs: { q: string; a: string }[];
   popularRoutes: { title: string; link: string; price: string }[];
 }) {
-  const reviews = buildReviewsFromTestimonials(opts.testimonials);
-  const localBusiness = buildLocalBusinessWithReviews({ reviews, includeAggregateRating: true });
+  const localBusiness = buildLocalBusinessWithReviews({ reviews: opts.testimonials, includeAggregateRating: true });
 
   return {
     '@context': 'https://schema.org',

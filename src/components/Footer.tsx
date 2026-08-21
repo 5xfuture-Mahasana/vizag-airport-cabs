@@ -16,12 +16,12 @@ export default function Footer() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
           {/* Brand Column */}
           <div className="space-y-6">
-            <Link to="/" className="flex flex-col gap-1" aria-label="Vizag Airport Cabs Home">
+            <Link to="/" className="flex flex-col gap-1" aria-label="Vizag Airport Cabs - Bhogapuram Home">
               <div className="flex items-center gap-2">
                 <div className="bg-brand-yellow p-2 rounded-lg">
                   <Car className="text-brand-blue w-6 h-6" />
                 </div>
-                <span className="text-2xl font-black tracking-tighter">VIZAG AIRPORT <span className="text-brand-yellow">CABS</span></span>
+                <span className="text-xl sm:text-2xl font-black tracking-tighter">VIZAG AIRPORT <span className="text-brand-yellow">CABS</span> - BHOGAPURAM</span>
               </div>
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 ml-12">A Service by Roadstar Cabs</span>
             </Link>
@@ -118,7 +118,7 @@ export default function Footer() {
               <Link to="/outstation-taxi-vizag" className="hover:text-brand-yellow transition-colors">Outstation Taxi Vizag</Link>
             </div>
             <p className="text-slate-500 text-xs">
-              © 2026 Vizag Airport Cabs. All rights reserved.
+              © 2026 Vizag Airport Cabs - Bhogapuram. All rights reserved.
             </p>
           </div>
         </div>

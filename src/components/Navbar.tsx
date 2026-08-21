@@ -15,12 +15,12 @@ export default function Navbar() {
     <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100" aria-label="Main Navigation">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
-          <Link to="/" className="flex items-center gap-2" aria-label="Vizag Airport Cabs Home">
+          <Link to="/" className="flex items-center gap-2" aria-label="Vizag Airport Cabs - Bhogapuram Home">
             {/* <div className="bg-brand-blue p-2 rounded-lg">
               <Car className="text-brand-yellow w-6 h-6" />
             </div> */}
             <div>
-              <span className="text-xl font-bold text-brand-blue block leading-tight">Vizag Airport Cabs</span>
+              <span className="text-base sm:text-xl font-bold text-brand-blue block leading-tight">Vizag Airport Cabs - Bhogapuram</span>
               <span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">A Service by Roadstar Cabs</span>
             </div>
           </Link>
