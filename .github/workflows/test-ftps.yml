@@ -10,6 +10,117 @@ jobs:
   test-ftp:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate secret presence and format (safe)
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -eu
+          echo "=== 1. Validating Secrets Format (Safe Checks) ==="
+
+          ERRORS=0
+          if [ -z "${FTP_SERVER:-}" ]; then
+            echo "::error::FTP_SERVER secret is missing or empty."
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "FTP_SERVER is set (length: ${#FTP_SERVER} characters)."
+            if [[ "$FTP_SERVER" =~ ^[a-zA-Z]+:// ]]; then
+              echo "::error::FTP_SERVER contains a URL protocol prefix (e.g. ftp://). Set it to just the hostname or IP without a protocol prefix."
+              ERRORS=$((ERRORS + 1))
+            fi
+            if [[ "$FTP_SERVER" =~ :[0-9]+$ ]]; then
+              echo "::error::FTP_SERVER contains a port number. Port should not be included in FTP_SERVER."
+              ERRORS=$((ERRORS + 1))
+            fi
+            if [[ "$FTP_SERVER" =~ / ]]; then
+              echo "::error::FTP_SERVER contains a path or slash. Set only the bare hostname or IP."
+              ERRORS=$((ERRORS + 1))
+            fi
+            if [[ "$FTP_SERVER" =~ [[:space:]] ]]; then
+              echo "::error::FTP_SERVER contains whitespace or newline characters."
+              ERRORS=$((ERRORS + 1))
+            fi
+          fi
+
+          if [ -z "${FTP_USERNAME:-}" ]; then
+            echo "::error::FTP_USERNAME secret is missing or empty."
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "FTP_USERNAME is set (length: ${#FTP_USERNAME} characters)."
+            if [[ "$FTP_USERNAME" =~ [[:space:]] ]]; then
+              echo "::error::FTP_USERNAME contains whitespace or newline characters."
+              ERRORS=$((ERRORS + 1))
+            fi
+          fi
+
+          if [ -z "${FTP_PASSWORD:-}" ]; then
+            echo "::error::FTP_PASSWORD secret is missing or empty."
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "FTP_PASSWORD is set (length: ${#FTP_PASSWORD} characters)."
+          fi
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Secret validation failed with $ERRORS error(s)."
+            exit 1
+          fi
+          echo "Secret presence and format checks passed."
+
+      - name: Check DNS resolution and host reachability
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          set -eu
+          echo "=== 2. DNS Resolution & Reachability Diagnostics ==="
+
+          echo "Testing DNS resolution for configured FTP_SERVER..."
+          if nslookup "$FTP_SERVER" >/dev/null 2>&1 || (command -v getent >/dev/null && getent hosts "$FTP_SERVER" >/dev/null 2>&1); then
+            echo "DNS resolution succeeded for FTP_SERVER."
+          else
+            echo "::error::DNS resolution failed for FTP_SERVER (NXDOMAIN / unresolvable)."
+            echo ""
+            echo "Checking public DNS for root and ftp subdomains of vizagairportcabs.in:"
+            echo "--- nslookup vizagairportcabs.in ---"
+            nslookup vizagairportcabs.in 2>&1 | grep -E "Address|Name|can't find" || true
+            echo "--- nslookup ftp.vizagairportcabs.in ---"
+            nslookup ftp.vizagairportcabs.in 2>&1 | grep -E "Address|Name|can't find" || true
+            echo ""
+            echo "DIAGNOSTIC NOTE: If FTP_SERVER is 'ftp.vizagairportcabs.in', an A or CNAME record for 'ftp' is missing in your Hostinger DNS Zone Editor. Alternatively, use the Hostinger server hostname found in Hostinger hPanel -> Hosting -> Plan details."
+            exit 1
+          fi
+
+          echo "Testing TCP port 21 connectivity on FTP_SERVER..."
+          if timeout 5 bash -c "</dev/tcp/$FTP_SERVER/21" 2>/dev/null || (command -v nc >/dev/null && nc -z -w 5 "$FTP_SERVER" 21 2>/dev/null); then
+            echo "TCP port 21 is open and reachable."
+          else
+            echo "::error::TCP port 21 is unreachable on FTP_SERVER (connection timed out or refused)."
+            exit 1
+          fi
+
+      - name: Inspect FTPS TLS certificate (without disabling SSL verification)
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          set -eu
+          echo "=== 3. FTPS TLS Certificate Diagnostic (No Credentials Used) ==="
+          echo "Probing TLS certificate on FTP_SERVER:21 via explicit FTPS..."
+
+          # Safe probe without credentials to inspect certificate parameters.
+          # Full SSL verification is enforced; --insecure/-k is NOT used.
+          set +e
+          CURL_TLS_OUT=$(curl -v --ssl-reqd "ftp://$FTP_SERVER/" --connect-timeout 10 2>&1)
+          CURL_STATUS=$?
+          set -e
+
+          echo "TLS Handshake probe summary:"
+          echo "$CURL_TLS_OUT" | grep -E "SSL certificate|Server certificate:|subject:|start date:|expire date:|subjectAltName:|issuer:|SSL certificate verify" || true
+
+          if [ "$CURL_STATUS" -eq 60 ]; then
+            echo "::error::SSL certificate mismatch or verification error (exit code 60). The server certificate does not match the FTP_SERVER hostname."
+            exit 60
+          fi
+
       - name: Verify FTPS login and list remote directory (read-only)
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
@@ -17,11 +128,13 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           set -eu
-          test -n "$FTP_SERVER"
-          test -n "$FTP_USERNAME"
-          test -n "$FTP_PASSWORD"
-          echo "Testing explicit FTPS login and read-only directory listing..."
+          echo "=== 4. Explicit FTPS Authentication & Directory Listing ==="
+          echo "Testing explicit FTPS login and read-only directory listing (strict SSL verification enforced)..."
+
+          # Uses --silent --show-error to avoid leaking credentials from verbose curl stderr
           curl --fail --silent --show-error --ssl-reqd \
             --user "$FTP_USERNAME:$FTP_PASSWORD" \
             "ftp://$FTP_SERVER/" --list-only
-          echo "FTPS login and directory listing succeeded."
+
+          echo "[SUCCESS] FTPS login and directory listing succeeded!"
+
