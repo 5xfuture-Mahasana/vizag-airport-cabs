@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - seo-fix
 
 jobs:
   build-and-deploy:
@@ -25,7 +26,8 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Hostinger via FTP
+      - name: Deploy to Hostinger via FTPS
+        if: github.ref == 'refs/heads/main'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
