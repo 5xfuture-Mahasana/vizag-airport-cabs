@@ -1,36 +1,43 @@
 # Deployment Guide — vizagairportcabs.in
 
-This project is configured for automatic deployment to Hostinger via GitHub Actions + FTP.
+This project is a Vite + React application. GitHub Actions builds the production files into `dist/` and uploads those files to Hostinger using explicit FTPS.
 
-## How it works
+## How deployment works
 
-Every time you push to the `main` branch on GitHub, GitHub Actions:
-1. Installs dependencies
-2. Builds the Vite production bundle into `dist/`
-3. Uploads the contents of `dist/` to `public_html/` on Hostinger via FTP
+Every push to the `main` branch triggers `.github/workflows/deploy.yml`:
 
-You can also trigger a manual deploy from the GitHub Actions tab.
+1. Checks out the repository.
+2. Installs dependencies with `npm ci`.
+3. Builds the Vite app with `npm run build`.
+4. Uploads the contents of `dist/` using FTPS.
 
-## Initial setup (one-time)
+A push to another branch (including `seo-fix`) does not deploy to the live website.
 
-The FTP deploy uses 3 GitHub repository secrets:
+## Required GitHub Actions secrets
 
-| Secret | Value |
+The workflow currently reads these exact secret names. Secret names are case-sensitive.
+
+| Secret | What to enter |
 |---|---|
-| `HOSTINGER_HOST` | `147.93.17.17` (from your hPanel) |
-| `HOSTINGER_USERNAME` | `u649594474.vizagairportcabs.in` |
-| `HOSTINGER_PASSWORD` | Your FTP password |
+| `FTP_SERVER` | The FTP host shown in Hostinger hPanel → Files → FTP Accounts / connection details. |
+| `FTP_USERNAME` | The FTP account username shown in Hostinger. This is **not necessarily** the SSH username. |
+| `FTP_PASSWORD` | The password for that FTP account. |
 
-### Add the secrets
+Add them under **GitHub → Settings → Secrets and variables → Actions → New repository secret**.
 
-1. Go to https://github.com/5xfuture-Mahasana/vizag-airport-cabs/settings/secrets/actions
-2. Click **"New repository secret"** for each of the 3 secrets above.
+Do not put FTP or SSH passwords in repository files, commits, screenshots, or chat messages.
 
-> If you ever rotate your Hostinger FTP password, update `HOSTINGER_PASSWORD` here too.
+## Confirm the remote directory before the first live deployment
 
-## Pushing changes from your IDE
+The workflow currently sets `server-dir: ./`. This is safe only if the FTP account's starting directory is the website's document root (the directory containing the live site's `index.html`, commonly `public_html`).
 
-From the project root in your terminal:
+Before enabling production deployment, verify the FTP account's root directory in Hostinger. If it starts one level above the document root, update `server-dir` in the workflow to the correct relative path (for example, `./public_html/`). Do not guess this path.
+
+The workflow uploads the contents of `dist/`, not the source files. Keep a backup of the current live document root before the first deployment.
+
+## Deploying changes
+
+From the project root:
 
 ```bash
 git add -A
@@ -38,21 +45,18 @@ git commit -m "Describe your change"
 git push origin main
 ```
 
-GitHub Actions will pick up the push and deploy automatically (1–2 minutes later).
+Only pushes to `main` trigger production deployment. Review and merge tested changes from feature branches before deploying.
 
-To check deploy status: https://github.com/5xfuture-Mahasana/vizag-airport-cabs/actions
+Check deployment status in the repository's **Actions** tab.
 
-## Local development
+## Local verification
 
 ```bash
-npm install      # install dependencies
-npm run dev      # start dev server at http://localhost:3000
-npm run build    # build production bundle into dist/
-npm run preview  # preview the built site locally
+npm ci
+npm run build
+npm run preview
 ```
 
-## Notes
+The production build output is `dist/`.
 
-- The build target is `dist/` — only `dist/` contents are uploaded to Hostinger.
-- `dist/` is gitignored, so each deploy rebuilds from source.
-- If Hostinger shows a stale page after deploy, clear Hostinger's cache (hPanel → Dashboard → Cache → Clear cache).
+If the website still shows an older version after a successful deployment, clear the Hostinger website cache and browser cache.
